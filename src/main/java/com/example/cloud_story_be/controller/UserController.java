@@ -32,8 +32,8 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestParam("user") String userJson,
                                           @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) {
-        User user = new User();
         ObjectMapper objectMapper = new ObjectMapper();
+        User user;
         try {
             user = objectMapper.readValue(userJson, User.class);
         } catch (JsonProcessingException e) {
@@ -54,11 +54,15 @@ public class UserController {
 
         Optional<User> userOpt = userService.findByEmail(email);
         if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
+            User user = userOpt.get();
             String token = jwtTokenProvider.generateToken(email);
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "token", token,
-                    "userId", userOpt.get().getId()
+                    "userId", user.getId(),
+                    "email", user.getEmail(),
+                    "nickname", user.getNickname(),
+                    "profileImageUrl", user.getProfileImageUrl()
             ));
         }
         return ResponseEntity.status(401).body(Map.of(
@@ -124,14 +128,23 @@ public class UserController {
         Optional<User> userOpt = userService.findByEmail(userEmail);
 
         if (userOpt.isPresent()) {
-            User user = userOpt.get();
+            User currentUser = userOpt.get();
             ObjectMapper objectMapper = new ObjectMapper();
+            User userUpdates;
             try {
-                user = objectMapper.readValue(userJson, User.class);
+                userUpdates = objectMapper.readValue(userJson, User.class);
             } catch (JsonProcessingException e) {
                 return ResponseEntity.badRequest().body("Invalid user data");
             }
-            boolean isUpdated = userService.updateUser(user.getId(), user.getNickname(), user.getPassword(), profileImage);
+
+            if (userUpdates.getNickname() != null) {
+                currentUser.setNickname(userUpdates.getNickname());
+            }
+            if (userUpdates.getPassword() != null) {
+                currentUser.setPassword(userUpdates.getPassword());
+            }
+
+            boolean isUpdated = userService.updateUser(currentUser.getId(), currentUser.getNickname(), currentUser.getPassword(), profileImage);
             if (isUpdated) {
                 return ResponseEntity.ok(Map.of(
                         "success", true,

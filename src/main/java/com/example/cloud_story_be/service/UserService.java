@@ -13,13 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.transaction.Transactional;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class UserService {
@@ -76,7 +73,7 @@ public class UserService {
         String fileName = null;
         if (profileImage != null && !profileImage.isEmpty()) {
             fileName = fileStorageService.storeFile(profileImage);
-            user.setProfileImageUrl("/images/" + fileName);
+            user.setProfileImageUrl("/uploads/" + fileName);
         }
         String sql = "INSERT INTO users (email, password, nickname, profile_image_url, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)";
         String encodedPassword = passwordEncoder.encode(user.getPassword());
@@ -117,20 +114,21 @@ public class UserService {
     @Transactional
     public boolean updateUser(Long userId, String nickname, String password, MultipartFile profileImage) {
         StringBuilder sql = new StringBuilder("UPDATE users SET updated_at = ?");
-        if (nickname != null) {
+        if (nickname != null && !nickname.isEmpty()) {
             sql.append(", nickname = '").append(nickname).append("'");
         }
-        if (password != null) {
+        if (password != null && !password.isEmpty()) {
             sql.append(", password = '").append(passwordEncoder.encode(password)).append("'");
         }
         if (profileImage != null && !profileImage.isEmpty()) {
             String fileName = fileStorageService.storeFile(profileImage);
-            sql.append(", profile_image_url = '").append("/images/").append(fileName).append("'");
+            sql.append(", profile_image_url = '").append("/uploads/").append(fileName).append("'");
         }
         sql.append(" WHERE id = ?");
         int rows = jdbcTemplate.update(sql.toString(), new Date(), userId);
         return rows > 0;
     }
+
 
     @Transactional
     public boolean deleteUser(Long userId) {

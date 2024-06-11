@@ -18,8 +18,8 @@ public class EmailService {
     public void sendVerificationCode(String to, String code) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
-        message.setSubject("Your Verification Code");
-        message.setText("Your verification code is: " + code);
+        message.setSubject("뜬 구름, 이메일 인증 코드 입니다.");
+        message.setText("인증 코드 : " + code);
         message.setFrom("reusable.park@gmail.com");
         mailSender.send(message);
     }

@@ -1,6 +1,5 @@
 package com.example.cloud_story_be.service;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,14 +8,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 @Service
 public class FileStorageService {
 
     private final Path fileStorageLocation;
 
-    public FileStorageService(@Value("${file.upload-dir}") String uploadDir) {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
+    public FileStorageService() {
+        this.fileStorageLocation = Paths.get("uploads").toAbsolutePath().normalize();
+
         try {
             Files.createDirectories(this.fileStorageLocation);
         } catch (Exception ex) {
@@ -25,7 +26,8 @@ public class FileStorageService {
     }
 
     public String storeFile(MultipartFile file) {
-        String fileName = file.getOriginalFilename();
+        String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+
         try {
             if (fileName.contains("..")) {
                 throw new RuntimeException("Sorry! Filename contains invalid path sequence " + fileName);
@@ -38,9 +40,5 @@ public class FileStorageService {
         } catch (IOException ex) {
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
         }
-    }
-
-    public Path loadFile(String fileName) {
-        return fileStorageLocation.resolve(fileName).normalize();
     }
 }
