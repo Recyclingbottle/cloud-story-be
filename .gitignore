@@ -38,3 +38,7 @@ out/
 
 /uploads
 
+# Ignore all application.properties files
+**/application.properties
+!src/main/resources/application.properties
+!src/test/resources/application.properties
