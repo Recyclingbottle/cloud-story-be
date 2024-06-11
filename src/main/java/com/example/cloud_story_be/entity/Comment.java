@@ -1,29 +1,32 @@
 package com.example.cloud_story_be.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "posts")
-public class Post {
+@Table(name = "comments")
+public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnoreProperties({"password", "createdAt", "updatedAt", "profileImageUrl"}) // Ignore unnecessary fields
-    private User user;
+    @JoinColumn(name = "post_id", nullable = false)
+    @JsonIgnore // post 필드를 무시 댓글 조회 할 때 post 데이터도 같이 넘어오기에 이를 추가함
+    private Post post;
 
-    @Column(nullable = false)
-    private String title;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"password", "createdAt", "updatedAt", "profileImageUrl"})
+    private User user;
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
@@ -39,14 +42,4 @@ public class Post {
 
     @Column(nullable = false)
     private int dislikeCount = 0;
-
-    @Column(nullable = false)
-    private int viewCount = 0;
-
-    @Column(nullable = false)
-    private int commentCount = 0;
-
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnoreProperties("post") // Ignore post in photos to prevent circular reference
-    private List<PostPhoto> photos;
 }

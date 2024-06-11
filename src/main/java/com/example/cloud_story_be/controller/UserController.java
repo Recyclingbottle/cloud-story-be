@@ -29,22 +29,25 @@ public class UserController {
         this.jwtTokenProvider = jwtTokenProvider;
     }
 
+    private Long getUserIdFromToken(String token) {
+        String userEmail = jwtTokenProvider.getUsernameFromToken(token.substring(7));
+        return userService.findByEmail(userEmail).orElseThrow(() -> new RuntimeException("User not found")).getId();
+    }
+
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestParam("user") String userJson,
                                           @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        User user;
         try {
-            user = objectMapper.readValue(userJson, User.class);
+            ObjectMapper objectMapper = new ObjectMapper();
+            User user = objectMapper.readValue(userJson, User.class);
+            User savedUser = userService.saveUser(user, profileImage);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "userId", savedUser.getId()
+            ));
         } catch (JsonProcessingException e) {
             return ResponseEntity.badRequest().body("Invalid user data");
         }
-
-        User savedUser = userService.saveUser(user, profileImage);
-        return ResponseEntity.ok(Map.of(
-                "success", true,
-                "userId", savedUser.getId()
-        ));
     }
 
     @PostMapping("/login")
@@ -124,27 +127,11 @@ public class UserController {
     public ResponseEntity<?> updateUser(@RequestHeader("Authorization") String token,
                                         @RequestParam("user") String userJson,
                                         @RequestParam(value = "profileImage", required = false) MultipartFile profileImage) {
-        String userEmail = jwtTokenProvider.getUsernameFromToken(token.substring(7));
-        Optional<User> userOpt = userService.findByEmail(userEmail);
-
-        if (userOpt.isPresent()) {
-            User currentUser = userOpt.get();
+        try {
+            Long userId = getUserIdFromToken(token);
             ObjectMapper objectMapper = new ObjectMapper();
-            User userUpdates;
-            try {
-                userUpdates = objectMapper.readValue(userJson, User.class);
-            } catch (JsonProcessingException e) {
-                return ResponseEntity.badRequest().body("Invalid user data");
-            }
-
-            if (userUpdates.getNickname() != null) {
-                currentUser.setNickname(userUpdates.getNickname());
-            }
-            if (userUpdates.getPassword() != null) {
-                currentUser.setPassword(userUpdates.getPassword());
-            }
-
-            boolean isUpdated = userService.updateUser(currentUser.getId(), currentUser.getNickname(), currentUser.getPassword(), profileImage);
+            User userUpdates = objectMapper.readValue(userJson, User.class);
+            boolean isUpdated = userService.updateUser(userId, userUpdates.getNickname(), userUpdates.getPassword(), profileImage);
             if (isUpdated) {
                 return ResponseEntity.ok(Map.of(
                         "success", true,
@@ -155,35 +142,24 @@ public class UserController {
                     "success", false,
                     "message", "Invalid request data"
             ));
+        } catch (JsonProcessingException e) {
+            return ResponseEntity.badRequest().body("Invalid user data");
         }
-        return ResponseEntity.status(404).body(Map.of(
-                "success", false,
-                "message", "User not found"
-        ));
     }
 
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUser(@RequestHeader("Authorization") String token) {
-        String userEmail = jwtTokenProvider.getUsernameFromToken(token.substring(7));
-        Optional<User> userOpt = userService.findByEmail(userEmail);
-
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-            boolean isDeleted = userService.deleteUser(user.getId());
-            if (isDeleted) {
-                return ResponseEntity.ok(Map.of(
-                        "success", true,
-                        "message", "User account deleted successfully"
-                ));
-            }
-            return ResponseEntity.status(400).body(Map.of(
-                    "success", false,
-                    "message", "Failed to delete user account"
+        Long userId = getUserIdFromToken(token);
+        boolean isDeleted = userService.deleteUser(userId);
+        if (isDeleted) {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "User account deleted successfully"
             ));
         }
-        return ResponseEntity.status(404).body(Map.of(
+        return ResponseEntity.status(400).body(Map.of(
                 "success", false,
-                "message", "User not found"
+                "message", "Failed to delete user account"
         ));
     }
 }

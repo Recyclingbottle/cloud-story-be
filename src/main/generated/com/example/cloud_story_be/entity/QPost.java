@@ -22,6 +22,8 @@ public class QPost extends EntityPathBase<Post> {
 
     public static final QPost post = new QPost("post");
 
+    public final NumberPath<Integer> commentCount = createNumber("commentCount", Integer.class);
+
     public final StringPath content = createString("content");
 
     public final DateTimePath<java.time.LocalDateTime> createdAt = createDateTime("createdAt", java.time.LocalDateTime.class);
@@ -39,6 +41,8 @@ public class QPost extends EntityPathBase<Post> {
     public final DateTimePath<java.time.LocalDateTime> updatedAt = createDateTime("updatedAt", java.time.LocalDateTime.class);
 
     public final QUser user;
+
+    public final NumberPath<Integer> viewCount = createNumber("viewCount", Integer.class);
 
     public QPost(String variable) {
         this(Post.class, forVariable(variable), INITS);
