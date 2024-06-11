@@ -41,4 +41,7 @@ public class FileStorageService {
             throw new RuntimeException("Could not store file " + fileName + ". Please try again!", ex);
         }
     }
+    public Path getFilePath(String fileName) {
+        return this.fileStorageLocation.resolve(fileName).normalize();
+    }
 }

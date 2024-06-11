@@ -32,6 +32,7 @@ public class SecurityConfig {
                         authorizeRequests
                                 .requestMatchers("/api/users/register", "/api/users/login", "/api/users/check-email","/api/users/verify-email", "/api/users/check-nickname", "/api/users/images/**").permitAll()
                                 .requestMatchers("/api/posts/**").authenticated()
+                                .requestMatchers("/api/files/**").permitAll()
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement ->
