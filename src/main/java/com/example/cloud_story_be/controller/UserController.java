@@ -10,7 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Optional;
 
@@ -52,22 +53,48 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody Map<String, String> loginRequest) {
+        Logger logger = LoggerFactory.getLogger(UserController.class);
+
+        // Log the received login request
+        logger.info("Received login request: {}", loginRequest);
+
         String email = loginRequest.get("email");
         String password = loginRequest.get("password");
 
         Optional<User> userOpt = userService.findByEmail(email);
         if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
             User user = userOpt.get();
+
+            // Log the user details
+            logger.info("User found: {}", user);
+
+            // Check for null values
             String token = jwtTokenProvider.generateToken(email);
+            Long userId = user.getId();
+            String userEmail = user.getEmail();
+            String nickname = user.getNickname();
+            String profileImageUrl = user.getProfileImageUrl();
+
+            if (userId == null || userEmail == null || nickname == null || profileImageUrl == null) {
+                logger.error("Null value found in user details: userId={}, email={}, nickname={}, profileImageUrl={}",
+                        userId, userEmail, nickname, profileImageUrl);
+                return ResponseEntity.status(500).body(Map.of(
+                        "success", false,
+                        "message", "Server error: Null value found in user details"
+                ));
+            }
+
             return ResponseEntity.ok(Map.of(
                     "success", true,
                     "token", token,
-                    "userId", user.getId(),
-                    "email", user.getEmail(),
-                    "nickname", user.getNickname(),
-                    "profileImageUrl", user.getProfileImageUrl()
+                    "userId", userId,
+                    "email", userEmail,
+                    "nickname", nickname,
+                    "profileImageUrl", profileImageUrl
             ));
         }
+
+        logger.warn("Invalid login attempt: email={}", email);
         return ResponseEntity.status(401).body(Map.of(
                 "success", false,
                 "message", "Invalid email or password"

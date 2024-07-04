@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -41,10 +43,16 @@ public class PostController {
     public ResponseEntity<?> createPost(@RequestHeader("Authorization") String token,
                                         @RequestParam("title") String title,
                                         @RequestParam("content") String content,
-                                        @RequestParam("photos") List<MultipartFile> photos) {
+                                        @RequestParam(value = "photos", required = false) List<MultipartFile> photos) {
         try {
             Long userId = getUserIdFromToken(token);
-            Post post = postService.createPost(userId, title, content, photos);
+
+            // photos 리스트에서 실제 파일이 있는 경우만 필터링
+            List<MultipartFile> validPhotos = photos.stream()
+                    .filter(photo -> !photo.isEmpty())
+                    .collect(Collectors.toList());
+
+            Post post = postService.createPost(userId, title, content, validPhotos);
             return ResponseEntity.status(201).body(Map.of(
                     "success", true,
                     "postId", post.getId(),
@@ -63,10 +71,14 @@ public class PostController {
         }
     }
 
+
     @GetMapping
     public ResponseEntity<?> getAllPosts(@RequestParam(name = "page", defaultValue = "1") int page,
-                                         @RequestParam(name = "limit", defaultValue = "10") int limit) {
-        Pageable pageable = PageRequest.of(page - 1, limit);
+                                         @RequestParam(name = "limit", defaultValue = "10") int limit,
+                                         @RequestParam(name = "sort", defaultValue = "createdAt") String sort,
+                                         @RequestParam(name = "direction", defaultValue = "desc") String direction) {
+        Sort sortOrder = Sort.by(Sort.Direction.fromString(direction), sort);
+            Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
         Page<Post> postsPage = postService.getAllPosts(pageable);
         return ResponseEntity.ok(Map.of(
                 "success", true,
@@ -76,6 +88,7 @@ public class PostController {
                 "posts", postsPage.getContent()
         ));
     }
+
 
     @GetMapping("/{postId}")
     public ResponseEntity<?> getPostById(@PathVariable("postId") Long postId) {

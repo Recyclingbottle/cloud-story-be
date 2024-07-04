@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -237,8 +238,11 @@ public class CommentController {
     @GetMapping("/{postId}/comments")
     public ResponseEntity<?> getCommentsByPostId(@PathVariable("postId") Long postId,
                                                  @RequestParam(name = "page", defaultValue = "1") int page,
-                                                 @RequestParam(name = "limit", defaultValue = "10") int limit) {
-        Pageable pageable = PageRequest.of(page - 1, limit);
+                                                 @RequestParam(name = "limit", defaultValue = "10") int limit,
+                                                 @RequestParam(name = "sort", defaultValue = "createdAt") String sort,
+                                                 @RequestParam(name = "direction", defaultValue = "desc") String direction) {
+        Sort sortOrder = Sort.by(Sort.Direction.fromString(direction), sort);
+        Pageable pageable = PageRequest.of(page - 1, limit, sortOrder);
         Page<Comment> commentsPage = commentService.getCommentsByPostId(postId, pageable);
 
         return ResponseEntity.ok(Map.of(

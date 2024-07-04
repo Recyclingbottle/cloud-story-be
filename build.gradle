@@ -14,18 +14,28 @@ java {
 	}
 }
 
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-	querydsl.extendsFrom compileClasspath
-}
-
 repositories {
 	mavenCentral()
 }
 
 dependencies {
+	// Lombok
+	compileOnly 'org.projectlombok:lombok:1.18.22'
+	annotationProcessor 'org.projectlombok:lombok:1.18.22'
+
+	// Hibernate
+	implementation 'org.hibernate:hibernate-validator:6.1.5.Final'
+
+	// QueryDSL
+	implementation "com.querydsl:querydsl-jpa:5.0.0"
+	implementation "com.querydsl:querydsl-core:5.0.0"
+	implementation "com.querydsl:querydsl-collections:5.0.0"
+	implementation "com.querydsl:querydsl-codegen:5.0.0"
+	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jpa"
+	annotationProcessor "org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final"
+	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
+
+	// Spring Boot
 	implementation 'org.springframework.boot:spring-boot-starter-data-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
@@ -33,19 +43,28 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'com.mysql:mysql-connector-j'
-	annotationProcessor 'org.projectlombok:lombok'
+
+	// JWT
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
-	implementation "com.querydsl:querydsl-jpa:5.0.0"
-	implementation "com.querydsl:querydsl-core:5.0.0"
-	implementation "com.querydsl:querydsl-collections:5.0.0"
-	annotationProcessor "com.querydsl:querydsl-apt:5.0.0:jakarta"
-	annotationProcessor "jakarta.annotation:jakarta.annotation-api"
-	annotationProcessor "jakarta.persistence:jakarta.persistence-api"
+
+	// Testing
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir 'src/main/generated'
+		}
+	}
+}
+
+clean {
+	delete 'src/main/generated'
 }
 
 tasks.named('test') {
@@ -54,32 +73,18 @@ tasks.named('test') {
 
 tasks.withType(JavaCompile) {
 	options.compilerArgs += ['-parameters']
+	options.generatedSourceOutputDirectory = file('src/main/generated')
 }
 
-// Querydsl 설정부
-def generated = 'src/main/generated'
+querydsl {
+	jpa = true
+	querydslSourcesDir = 'src/main/generated'
+}
 
-// querydsl QClass 파일 생성 위치를 지정
 tasks.withType(JavaCompile) {
-	options.annotationProcessorGeneratedSourcesDirectory = file(generated)
+	options.annotationProcessorPath = configurations.annotationProcessor
 }
 
-// java source set 에 querydsl QClass 위치 추가
-sourceSets {
-	main {
-		java {
-			srcDir generated
-		}
-	}
-}
-
-// gradle clean 시에 QClass 디렉토리 삭제
-clean {
-	delete file(generated)
-}
-
-
-// 컴파일러 인수에 -parameters 플래그 추가
-tasks.withType(JavaCompile) {
-	options.compilerArgs += ['-parameters']
+configurations {
+	querydsl.extendsFrom compileClasspath
 }
