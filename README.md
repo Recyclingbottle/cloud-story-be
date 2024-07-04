@@ -1,4 +1,5 @@
-# 뜬 구름 벡엔드 on Spring Boot, Cloud Story Backend on Spring Boot
+# 뜬 구름 벡엔드 on Spring Boot<br>
+# Cloud Story Backend on Spring Boot
 
 Cloud Story Backend는 사용자 등록, 로그인, 게시글 작성, 댓글 작성 등의 기능을 제공하는 RESTful API 서버입니다. 이 프로젝트는 Spring Boot를 사용하여 구현되었습니다.
 
